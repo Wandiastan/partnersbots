@@ -156,16 +156,22 @@ const dashboardHTML = `
             border-radius: 8px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             width: 90%;
-            max-width: 500px;
+            max-width: 450px;
             z-index: 1002;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal-header {
-            padding: 1rem;
+            padding: 0.75rem;
             border-bottom: 1px solid #3d3d3d;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            background-color: #2d2d2d;
+            z-index: 1;
         }
 
         .modal-title {
@@ -189,16 +195,16 @@ const dashboardHTML = `
         }
 
         .modal-body {
-            padding: 1rem;
+            padding: 0.75rem;
         }
 
         .form-group {
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
         }
 
         .form-label {
             display: block;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.2rem;
             color: #ffffff;
             font-size: 0.8rem;
             font-weight: 500;
@@ -206,7 +212,7 @@ const dashboardHTML = `
 
         .form-input {
             width: 100%;
-            padding: 0.5rem;
+            padding: 0.4rem;
             background-color: #333333;
             border: 1px solid #4a4a4a;
             border-radius: 4px;
@@ -222,7 +228,7 @@ const dashboardHTML = `
         }
 
         textarea.form-input {
-            min-height: 60px;
+            min-height: 50px;
             resize: vertical;
         }
 
@@ -243,8 +249,8 @@ const dashboardHTML = `
         .pricing-options {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
+            gap: 0.4rem;
+            margin-bottom: 0.4rem;
         }
 
         .pricing-option {
@@ -270,7 +276,7 @@ const dashboardHTML = `
         .file-upload {
             position: relative;
             width: 100%;
-            height: 70px;
+            height: 60px;
             border: 2px dashed #4a4a4a;
             border-radius: 4px;
             display: flex;
@@ -278,6 +284,7 @@ const dashboardHTML = `
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s;
+            margin-bottom: 0.4rem;
         }
 
         .file-upload:hover {
@@ -294,8 +301,15 @@ const dashboardHTML = `
 
         .file-upload-text {
             color: #888;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-align: center;
+            padding: 0 0.5rem;
+        }
+
+        .file-upload-text div {
+            font-size: 0.7rem;
+            color: #888;
+            margin-top: 0.2rem;
         }
 
         .file-upload-status {
@@ -353,11 +367,15 @@ const dashboardHTML = `
         }
 
         .modal-footer {
-            padding: 1rem;
+            padding: 0.75rem;
             border-top: 1px solid #3d3d3d;
             display: flex;
             justify-content: flex-end;
             gap: 0.5rem;
+            position: sticky;
+            bottom: 0;
+            background-color: #2d2d2d;
+            z-index: 1;
         }
 
         .btn-secondary {
@@ -1189,7 +1207,31 @@ const dashboardHTML = `
 
 // Route to serve the dashboard
 router.get('/', (req, res) => {
-    res.send(dashboardHTML);
+    const { partnerId, name } = req.query;
+    
+    if (!partnerId) {
+        return res.status(401).send('Unauthorized: Partner ID is required');
+    }
+
+    const userName = name ? decodeURIComponent(name) : 'Partner';
+    const modifiedDashboardHTML = dashboardHTML.replace(
+        '<span class="logo-highlight">DFirst</span> Partners Bots',
+        `<span class="logo-highlight">DFirst</span> Partners Bots - ${userName}`
+    );
+
+    res.send(modifiedDashboardHTML);
+});
+
+// Add a route to handle bot submissions with partner tracking
+router.post('/submit-bot', (req, res) => {
+    const { partnerId } = req.query;
+    if (!partnerId) {
+        return res.status(401).json({ error: 'Unauthorized: Partner ID is required' });
+    }
+    // Add the partnerId to the bot data
+    const botData = { ...req.body, partnerId };
+    // Handle bot submission (you'll implement this based on your needs)
+    res.json({ success: true, message: 'Bot submitted successfully' });
 });
 
 module.exports = router;
