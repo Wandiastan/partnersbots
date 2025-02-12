@@ -61,11 +61,21 @@ const dashboardHTML = `
             font-size: 1.2rem;
             font-weight: 600;
             letter-spacing: 0.5px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
         }
 
         .logo-highlight {
             color: #4a90e2;
             font-weight: 700;
+        }
+
+        .partner-name {
+            font-size: 0.65rem;
+            color: #888;
+            margin-top: -2px;
+            font-weight: 400;
         }
 
         .button-container {
@@ -765,7 +775,7 @@ const dashboardHTML = `
             <div class="header-top">
                 <div class="logo">
                     <div class="logo-text">
-                        <span class="logo-highlight">DFirst</span> Partners Bots
+                        <span class="logo-highlight">DFirst</span> Partners Bots<div class="partner-name">${userName}</div>
                     </div>
                 </div>
             </div>
@@ -1216,7 +1226,7 @@ router.get('/', (req, res) => {
     const userName = name ? decodeURIComponent(name) : 'Partner';
     const modifiedDashboardHTML = dashboardHTML.replace(
         '<span class="logo-highlight">DFirst</span> Partners Bots',
-        `<span class="logo-highlight">DFirst</span> Partners Bots - ${userName}`
+        `<span class="logo-highlight">DFirst</span> Partners Bots<div class="partner-name">${userName}</div>`
     );
 
     res.send(modifiedDashboardHTML);
