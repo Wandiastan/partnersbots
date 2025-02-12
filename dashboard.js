@@ -1,5 +1,26 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+const { initializeApp } = require('firebase/app');
+const { getStorage, ref, uploadBytes, getDownloadURL } = require('firebase/storage');
+const { getFirestore, collection, addDoc, serverTimestamp } = require('firebase/firestore');
+require('dotenv').config();
+
+// Firebase configuration
+const firebaseConfig = {
+    apiKey: process.env.FIREBASE_API_KEY,
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.FIREBASE_APP_ID
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
+const db = getFirestore(app);
 
 // Dashboard HTML with dark theme
 const dashboardHTML = `
@@ -972,23 +993,48 @@ const dashboardHTML = `
             }
 
             if (submitBtn) {
-                submitBtn.addEventListener('click', function() {
+                submitBtn.addEventListener('click', async function() {
                     const form = document.getElementById('addBotForm');
-                    if (form.checkValidity()) {
-                        const botData = {
-                            name: document.getElementById('botName').value,
-                            description: document.getElementById('description').value,
-                            platform: document.getElementById('platform').value,
-                            price: document.getElementById('price').value || 'Free',
-                            tutorialLink: document.getElementById('tutorialLink').value
-                        };
-
-                        addBotCard(botData);
-                        document.getElementById('addBotModal').style.display = 'none';
-                        document.body.style.overflow = 'auto';
-                        form.reset();
-                    } else {
+                    if (!form.checkValidity()) {
                         form.reportValidity();
+                        return;
+                    }
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('name', document.getElementById('botName').value);
+                        formData.append('description', document.getElementById('description').value);
+                        formData.append('platform', document.getElementById('platform').value);
+                        formData.append('price', document.getElementById('price').value || 'Free');
+                        formData.append('tutorialLink', document.getElementById('tutorialLink').value);
+                        
+                        const fileInput = document.getElementById('botFile');
+                        if (fileInput.files[0]) {
+                            formData.append('botFile', fileInput.files[0]);
+                        }
+
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const partnerId = urlParams.get('partnerId');
+                        const ownerName = urlParams.get('name');
+
+                        const response = await fetch('/submit-bot?partnerId=' + partnerId + '&name=' + encodeURIComponent(ownerName), {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            addBotCard(result.data);
+                            document.getElementById('addBotModal').style.display = 'none';
+                            document.body.style.overflow = 'auto';
+                            form.reset();
+                            alert('Bot added successfully!');
+                        } else {
+                            throw new Error(result.error);
+                        }
+                    } catch (error) {
+                        console.error('Error submitting bot:', error);
+                        alert('Failed to add bot. Please try again.');
                     }
                 });
             }
@@ -1269,15 +1315,55 @@ router.get('/', (req, res) => {
 });
 
 // Add a route to handle bot submissions with partner tracking
-router.post('/submit-bot', (req, res) => {
-    const { partnerId } = req.query;
-    if (!partnerId) {
-        return res.status(401).json({ error: 'Unauthorized: Partner ID is required' });
+router.post('/submit-bot', upload.single('botFile'), async (req, res) => {
+    try {
+        const { partnerId, name: ownerName } = req.query;
+        if (!partnerId) {
+            return res.status(401).json({ error: 'Unauthorized: Partner ID is required' });
+        }
+
+        const { name, description, platform, price, tutorialLink } = req.body;
+        const file = req.file;
+
+        // Upload file to Firebase Storage
+        const fileName = `bots/${partnerId}/${Date.now()}_${file.originalname}`;
+        const storageRef = ref(storage, fileName);
+        await uploadBytes(storageRef, file.buffer);
+
+        // Get the download URL
+        const downloadURL = await getDownloadURL(storageRef);
+
+        // Save bot data to Firestore
+        const botData = {
+            name,
+            description,
+            platform,
+            price: price || 'Free',
+            tutorialLink,
+            fileName: file.originalname,
+            fileUrl: downloadURL,
+            partnerId,
+            ownerName: ownerName || 'Unknown User',
+            createdAt: serverTimestamp()
+        };
+
+        const docRef = await addDoc(collection(db, 'bots'), botData);
+
+        res.json({ 
+            success: true, 
+            message: 'Bot submitted successfully',
+            data: {
+                ...botData,
+                id: docRef.id
+            }
+        });
+    } catch (error) {
+        console.error('Error submitting bot:', error);
+        res.status(500).json({ 
+            error: 'Failed to submit bot',
+            details: error.message 
+        });
     }
-    // Add the partnerId to the bot data
-    const botData = { ...req.body, partnerId };
-    // Handle bot submission (you'll implement this based on your needs)
-    res.json({ success: true, message: 'Bot submitted successfully' });
 });
 
 module.exports = router;
