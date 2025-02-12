@@ -563,28 +563,32 @@ const dashboardHTML = `
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #888;
             margin-top: 0.5rem;
-            padding: 0.5rem;
+            padding: 0.4rem 0.5rem;
             background: rgba(0, 0, 0, 0.05);
             border-radius: 4px;
         }
 
         .bot-owner svg {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             color: #888;
         }
 
         .bot-owner-name {
             font-weight: 500;
             color: #666;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .bot-owner-id {
             color: #888;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
 
         .bot-price {
@@ -1141,6 +1145,8 @@ const dashboardHTML = `
                 const urlParams = new URLSearchParams(window.location.search);
                 const ownerName = decodeURIComponent(urlParams.get('name') || 'Unknown User');
                 const ownerId = urlParams.get('partnerId') || 'Unknown ID';
+                // Show only first 6 characters of ID followed by '...'
+                const partialId = ownerId.substring(0, 6) + '...';
                 
                 card.innerHTML = 
                     '<div class="bot-header">' +
@@ -1162,8 +1168,8 @@ const dashboardHTML = `
                         '<svg viewBox="0 0 16 16" fill="currentColor">' +
                             '<path d="M8 8a3 3 0 100-6 3 3 0 000 6zm2 1H6a4 4 0 00-4 4v1h12v-1a4 4 0 00-4-4z"/>' +
                         '</svg>' +
-                        '<span class="bot-owner-name">' + ownerName + '</span>' +
-                        '<span class="bot-owner-id">(ID: ' + ownerId + ')</span>' +
+                        '<span class="bot-owner-name" title="' + ownerName + '">' + ownerName + '</span>' +
+                        '<span class="bot-owner-id">#' + partialId + '</span>' +
                     '</div>' +
                     (fileName ? 
                         '<div class="bot-file">' +
