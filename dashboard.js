@@ -30,7 +30,7 @@ const firebaseConfig = {
 
 // Initialize Firebase client
 const app = initializeApp(firebaseConfig);
-const storage = admin.storage().bucket();
+const storage = getStorage(app);
 const db = getFirestore(app);
 
 // Dashboard HTML with dark theme
@@ -1336,13 +1336,23 @@ router.post('/submit-bot', upload.single('botFile'), async (req, res) => {
         const { name, description, platform, price, tutorialLink } = req.body;
         const file = req.file;
 
-        // Upload file to Firebase Storage
+        // Upload file to Firebase Storage using admin SDK
+        const bucket = admin.storage().bucket();
         const fileName = `bots/${partnerId}/${Date.now()}_${file.originalname}`;
-        const storageRef = ref(storage, fileName);
-        await uploadBytes(storageRef, file.buffer);
+        const fileBuffer = file.buffer;
+
+        const fileRef = bucket.file(fileName);
+        await fileRef.save(fileBuffer, {
+            metadata: {
+                contentType: file.mimetype
+            }
+        });
 
         // Get the download URL
-        const downloadURL = await getDownloadURL(storageRef);
+        const [downloadURL] = await fileRef.getSignedUrl({
+            action: 'read',
+            expires: '03-01-2500'
+        });
 
         // Save bot data to Firestore
         const botData = {
