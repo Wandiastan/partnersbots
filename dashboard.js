@@ -18,6 +18,9 @@ admin.initializeApp({
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET
 });
 
+// Initialize Firestore
+const db = admin.firestore();
+
 // Firebase client configuration
 const firebaseConfig = {
     apiKey: process.env.FIREBASE_API_KEY,
@@ -31,7 +34,7 @@ const firebaseConfig = {
 // Initialize Firebase client
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
-const db = getFirestore(app);
+const dbFirestore = getFirestore(app);
 
 // Dashboard HTML with dark theme
 const dashboardHTML = `
@@ -1336,6 +1339,10 @@ router.post('/submit-bot', upload.single('botFile'), async (req, res) => {
         const { name, description, platform, price, tutorialLink } = req.body;
         const file = req.file;
 
+        if (!file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
         // Upload file to Firebase Storage using admin SDK
         const bucket = admin.storage().bucket();
         const fileName = `bots/${partnerId}/${Date.now()}_${file.originalname}`;
@@ -1344,11 +1351,15 @@ router.post('/submit-bot', upload.single('botFile'), async (req, res) => {
         const fileRef = bucket.file(fileName);
         await fileRef.save(fileBuffer, {
             metadata: {
-                contentType: file.mimetype
+                contentType: file.mimetype,
+                metadata: {
+                    partnerId,
+                    ownerName: ownerName || 'Unknown User'
+                }
             }
         });
 
-        // Get the download URL
+        // Get the download URL with a long expiration
         const [downloadURL] = await fileRef.getSignedUrl({
             action: 'read',
             expires: '03-01-2500'
@@ -1365,10 +1376,10 @@ router.post('/submit-bot', upload.single('botFile'), async (req, res) => {
             fileUrl: downloadURL,
             partnerId,
             ownerName: ownerName || 'Unknown User',
-            createdAt: serverTimestamp()
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
         };
 
-        const docRef = await addDoc(collection(db, 'bots'), botData);
+        const docRef = await db.collection('bots').add(botData);
 
         res.json({ 
             success: true, 
