@@ -61,21 +61,11 @@ const dashboardHTML = `
             font-size: 1.2rem;
             font-weight: 600;
             letter-spacing: 0.5px;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
         }
 
         .logo-highlight {
             color: #4a90e2;
             font-weight: 700;
-        }
-
-        .partner-name {
-            font-size: 0.65rem;
-            color: #888;
-            margin-top: -2px;
-            font-weight: 400;
         }
 
         .button-container {
@@ -569,6 +559,34 @@ const dashboardHTML = `
             color: #888;
         }
 
+        .bot-owner {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+        }
+
+        .bot-owner svg {
+            width: 12px;
+            height: 12px;
+            color: #888;
+        }
+
+        .bot-owner-name {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .bot-owner-id {
+            color: #888;
+            font-size: 0.75rem;
+        }
+
         .bot-price {
             display: flex;
             align-items: center;
@@ -775,7 +793,7 @@ const dashboardHTML = `
             <div class="header-top">
                 <div class="logo">
                     <div class="logo-text">
-                        <span class="logo-highlight">DFirst</span> Partners Bots<div class="partner-name">${userName}</div>
+                        <span class="logo-highlight">DFirst</span> Partners Bots
                     </div>
                 </div>
             </div>
@@ -1119,6 +1137,11 @@ const dashboardHTML = `
                 const botType = getBotTypeLabel(bot.platform);
                 const capitalizedBotName = bot.name.charAt(0).toUpperCase() + bot.name.slice(1);
                 
+                // Get the current user's name and ID from the URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const ownerName = decodeURIComponent(urlParams.get('name') || 'Unknown User');
+                const ownerId = urlParams.get('partnerId') || 'Unknown ID';
+                
                 card.innerHTML = 
                     '<div class="bot-header">' +
                         '<h3 class="bot-name">' + capitalizedBotName + '</h3>' +
@@ -1135,6 +1158,13 @@ const dashboardHTML = `
                             '<path d="M8 10L4 6h8l-4 4z"/>' +
                         '</svg>' +
                     '</button>' +
+                    '<div class="bot-owner">' +
+                        '<svg viewBox="0 0 16 16" fill="currentColor">' +
+                            '<path d="M8 8a3 3 0 100-6 3 3 0 000 6zm2 1H6a4 4 0 00-4 4v1h12v-1a4 4 0 00-4-4z"/>' +
+                        '</svg>' +
+                        '<span class="bot-owner-name">' + ownerName + '</span>' +
+                        '<span class="bot-owner-id">(ID: ' + ownerId + ')</span>' +
+                    '</div>' +
                     (fileName ? 
                         '<div class="bot-file">' +
                             '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">' +
@@ -1226,7 +1256,7 @@ router.get('/', (req, res) => {
     const userName = name ? decodeURIComponent(name) : 'Partner';
     const modifiedDashboardHTML = dashboardHTML.replace(
         '<span class="logo-highlight">DFirst</span> Partners Bots',
-        `<span class="logo-highlight">DFirst</span> Partners Bots<div class="partner-name">${userName}</div>`
+        `<span class="logo-highlight">DFirst</span> Partners Bots - ${userName}`
     );
 
     res.send(modifiedDashboardHTML);
