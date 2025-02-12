@@ -5,9 +5,20 @@ const upload = multer({ storage: multer.memoryStorage() });
 const { initializeApp } = require('firebase/app');
 const { getStorage, ref, uploadBytes, getDownloadURL } = require('firebase/storage');
 const { getFirestore, collection, addDoc, serverTimestamp } = require('firebase/firestore');
+const admin = require('firebase-admin');
 require('dotenv').config();
 
-// Firebase configuration
+// Firebase Admin initialization
+admin.initializeApp({
+    credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+    }),
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET
+});
+
+// Firebase client configuration
 const firebaseConfig = {
     apiKey: process.env.FIREBASE_API_KEY,
     authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -17,9 +28,9 @@ const firebaseConfig = {
     appId: process.env.FIREBASE_APP_ID
 };
 
-// Initialize Firebase
+// Initialize Firebase client
 const app = initializeApp(firebaseConfig);
-const storage = getStorage(app);
+const storage = admin.storage().bucket();
 const db = getFirestore(app);
 
 // Dashboard HTML with dark theme
